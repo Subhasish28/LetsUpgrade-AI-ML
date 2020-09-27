@@ -1,0 +1,90 @@
+Question 1: Using the given MT cars dataset you need to find outlier with z score.
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("mtcars.csv")
+df.mpg
+plt.hist(df.mpg, bins=20, width=0.8)
+plt.xlabel('mpg')
+plt.ylabel('Count')
+plt.show()
+df.mpg.describe()
+upper = df.mpg.mean() + 3*df.mpg.std()
+lower = df.mpg.mean() -3*df.mpg.std()
+print(upper)
+print(lower)
+new_df= df[(df.mpg<upper) & (df.mpg>lower)]
+new_df.head()
+new_df.shape()
+df['zscore'] = ( df.mpg - df.mpg.mean() ) / df.mpg.std()
+df.head(5)
+df[df['zscore']>3]
+df[df['zscore']<-3]
+df_new = df[(df.zscore>-3) & (df.zscore<3)]
+
+
+Question 2: Using the Boston data set from sklearn, find out the Outlier and treat them.
+
+boston = load_boston()
+x = boston.data
+y = boston.target
+columns = boston.feature_names
+
+boston_df = pd.DataFrame(boston.data)
+boston_df.columns = columns
+boston_df.head()
+
+import seaborn as sns
+sns.boxplot(x=boston_df['DIS'])
+
+fig, ax = plt.subplots(figsize=(16,8))
+ax.scatter(boston_df['INDUS'], boston_df['TAX'])
+ax.set_xlabel('Proportion of non-retail business acres per town')
+ax.set_ylabel('Full-value property-tax rate per $10,000')
+plt.show()
+
+from scipy import stats
+import numpy as np
+z = np.abs(stats.zscore(boston_df))
+print(z)
+
+threshold = 3
+print(np.where(z > 3))
+
+Q1 = boston_df_o1.quantile(0.25)
+Q3 = boston_df_o1.quantile(0.75)
+IQR = Q3 - Q1
+print(IQR)
+
+print(boston_df_o1 < (Q1 - 1.5 * IQR)) |(boston_df_o1 > (Q3 + 1.5 * IQR))
+
+boston_df_o = boston_df_o[(z < 3).all(axis=1)]
+
+boston_df_out = boston_df_o1[~((boston_df_o1 < (Q1 - 1.5 * IQR)) |(boston_df_o1 > (Q3 + 1.5 * IQR))).any(axis=1)]
+boston_df_out.shape
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
