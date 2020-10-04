@@ -1,0 +1,106 @@
+Pat – 5, 4, 4, 3, 9, 4
+Jack – 4, 8, 7, 5, 1, 5
+Alex – 9, 9, 8, 10, 4, 10
+
+Based on the above results we would like to know who the best archer is. In other words our null hypothesis is that the means of all populations are equal.
+
+  \[H_0:\mu _1 = \mu _2 = \mu _3\]
+
+Rejecting the null hypothesis would mean that there is a significant difference between at least two of the archers.
+
+The decision to reject the null hypothesis and accept the alternative hypothesis is based on the significance level of the test (\alpha) and the probability of observing the effect given that the null hypothesis is true (p-value). If p \leq \alpha the null hypothesis is ruled out. We typically use a value of \alpha = 0.05, which corresponds to 95% confidence.
+
+Using one-way ANOVA in Python is quite straightforward – the f_oneway function from SciPy performs a one-way ANOVA and returns the F and p values from the test. We can use the following code to run the analysis against the data sets from our example.
+
+import numpy as np
+from scipy import stats
+ 
+data = np.rec.array([
+('Pat', 5),
+('Pat', 4),
+('Pat', 4),
+('Pat', 3),
+('Pat', 9),
+('Pat', 4),
+('Jack', 4),
+('Jack', 8),
+('Jack', 7),
+('Jack', 5),
+('Jack', 1),
+('Jack', 5),
+('Alex', 9),
+('Alex', 8),
+('Alex', 8),
+('Alex', 10),
+('Alex', 5),
+('Alex', 10)], dtype = [('Archer','|U5'),('Score', '<i8')])
+ 
+f, p = stats.f_oneway(data[data['Archer'] == 'Pat'].Score,
+                      data[data['Archer'] == 'Jack'].Score,
+                      data[data['Archer'] == 'Alex'].Score)
+ 
+print ('One-way ANOVA')
+print ('=============')
+ 
+print ('F value:', f)
+print ('P value:', p, '\n')
+
+Running the above produces the following output:
+
+One-way ANOVA
+=============
+F value: 5.0
+P value: 0.0216837493201
+
+As 0.02 \leq 0.05 we reject the null hypothesis and we conclude that at least one of the means is different from at least one other population mean (i.e. not all archers perform equally).
+
+The thing with one-way ANOVA is that although we now know that there is difference in the performance of the archers, we do not know know exactly who performs best or worst. This is why the analysis of variance is often followed by a post hoc analysis.
+
+Tukey’s range test
+Tukey’s range test, named after the American mathematician John Tukey, is a common method used as post hoc analysis after one-way ANOVA. This test compares all possible pairs and we can use it to precisely identify difference between two means that’s greater than the expected standard error.
+
+The statsmodels library provides an easy to use implementation of Tukey’s range test. First, we have to modify our code to import the required classes:
+
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from statsmodels.stats.multicomp import MultiComparison
+
+We can then append the following to the code to run the actual test.
+
+mc = MultiComparison(data['Score'], data['Archer'])
+result = mc.tukeyhsd()
+ 
+print(result)
+print(mc.groupsunique)
+
+Note the last line in the snippet. We need this to see the group IDs assigned to the archers, as the algorithm won’t necessarily follow the group order from the array. Also note that the tukeyhsd() function has a parameter named alpha, which we are not setting explicitly as we are happy with its default value (\alpha = 0.05).
+
+You can get the complete code of archers.py from GitHub.
+
+Running the code produces the following output:
+
+$ ./archers.py
+One-way ANOVA
+=============
+F value: 5.0
+P value: 0.0216837493201
+
+Multiple Comparison of Means - Tukey HSD,FWER=0.05
+=============================================
+group1 group2 meandiff  lower   upper  reject
+---------------------------------------------
+  0      1    -3.3333  -6.5755 -0.0911  True
+  0      2      -3.5   -6.7422 -0.2578  True
+  1      2    -0.1667  -3.4089  3.0755 False
+---------------------------------------------
+['Alex' 'Jack' 'Pat']
+$
+
+The results above reveal that Alex (group 0) significantly differs from the other two archers. The third column tells us that there is significant evidence to reject the null hypothesis for the groups Alex-Jack (0-1) and Alex-Pat(0-2).
+
+The test also shows the difference between the group means (the meandiff column).
+
+  \[\mu _{Jack} - \mu _{Alex} = -3.3333\]
+
+  \[\mu _{Pat} - \mu _{Alex} = - 3.5\]
+
+This leads to the conclusion that Alex is the best archer in the group.
