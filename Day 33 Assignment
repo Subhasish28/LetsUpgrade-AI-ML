@@ -1,1 +1,26 @@
-
+Program on SVM for performing classification and finding its accuracy on the given data:
+Step 1: Import libraries
+Image for post
+First, we will import the libraries needed for our program.
+We import svm and datasets from the sklearn Library
+Numpy for carrying out efficient mathematical computations
+accuracy_score from sklearn.metrics to predict the accuracy of the model and from sklearn.model_selection import train_test_split for splitting the data into a training set and testing set
+Step 2: Add datasets, insert the desired number of features and train the model
+Image for post
+Here is the code for importing inbuilt dataset. “iris” is the variable name in which we will be loading our required dataset.
+We can also import the dataset from the location it is stored on your computer to a new variable.The pd.read_csv is used to read the csv file (dataset file). The following code shows the syntax:-
+Iris = pd.read_csv(‘C:/Users/Kshitij Ved/Desktop/Iris.csv’)
+In the next step X variable is loaded with iris.data[:, :2], in this we only take the first two features as input for training.
+And the Y variable is loaded with iris.target, that is the output of the original data.
+Then we Split arrays or matrices into a random train and test subset using train_test_split(). We provide the proportion of data to use as a test set and we can provide the parameter random_state, which is used to ensure repeatable results. Test_size is used to decide how much data to be given for testing to the model.
+Moving along, we are now going to define our classifier…
+We will be using the SVC (support vector classifier) SVM (support vector machine). Our kernel is going to be linear, and C is equal to 1. C is a valuation of “how badly” you want to properly classify, or fit, everything. We are going to just stick with 1 for now, which is a nice default parameter.
+Step 3: Predicting the output and printing the accuracy of the model
+Image for post
+In the next step we use the clf.predict(x_test), that is the classifier to predict the test results and then we print the accuracy score, In the above example, 76.31578947368422 is the predicted value of the model when we load iris as the data set.
+Step 4: Finally plotting the classifier for our program
+Image for post
+In this step, we will be plotting our classifier. Here the np.meshgrid() function is used to create a rectangular grid out of two given one-dimensional arrays representing the Cartesian indexing or Matrix indexing.
+NumPy provides the reshape() function on the NumPy array object that can be used to reshape the data. In the case of reshaping a one-dimensional array into a two-dimensional array with one column, the tuple would be the shape of the array as the first dimension and 1 for the second dimension.
+plt.scatter() is used to plot the points on the graph and plt.show() displays the graph.
+Image for post
