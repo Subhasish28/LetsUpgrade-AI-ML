@@ -1,1 +1,377 @@
+Features
+This dataset contains over 6,000 transactions and over 15,000 observations. The following are the features of this dataset and their definitions.
 
+- Date:
+    Categorical variable that tells us the date of the transactions (YYYY-MM-DD format). The column includes dates from 30/10/2016 to 09/04/2017.
+- Time:
+    Categorical variable that tells us the time of the transactions (HH:MM:SS format).
+- Transactions:
+    Quantitative variable that allows us to differentiate the transactions. The rows that share the same value in this field belong to the same transaction, that's why the data set has less transactions than observations.
+- Item:
+    Categorical variable with the products.
+
+The Plan
+We will use this dataset to perform a modeling technique known as Market Basket Analysis. This is based on the idea that one can predict purchasing patterns within items, which is what makes it popular in the field of retail and commerce. This form of analysis helps many forms of businesses understand behavioral patterns and purchase patterns.
+
+The idea is to find the link between purchased items. For example, if someone purchases Item1, how likely are they to then also purchase Item2? The answer to this can be found with the application of the Apriori Algorithm.
+
+
+Theory
+The Apriori Algorithm gives us associative properties within transactions. This is also known as Association Rules for our dataset. The analysis of these association rules depend on three measures- Support, Confidence, and Lift.
+
+- Support
+Support can be thought of as the percentage of the total amount of transactions relevant to an association. This is perhaps better understood by a simple equation:     
+
+Support(Item1) = (Transactions containing Item1) / (Total transactions) 
+
+- Confidence
+Confidence tells us how likely it is that purchasing Item1 results in a purchase of Item2.
+
+Confidence(Item1 -> Item2) = (Transactions containing both Item1 and Item2) / (Transactions containing Item1)
+
+- Lift
+The lift refers to how the chances of Item2 being purchased increased given that Item1 is purchased.
+
+Lift(Item1 -> Item2) = (Confidence(Item1 -> Item2)) / (Support(Item2))
+
+A Lift of 1 means there is no association between products A and B. Lift of greater than 1 means products A and B are more likely to be bought together. Finally, Lift of less than 1 refers to the case where two products are unlikely to be bought together. (https://stackabuse.com/association-rule-mining-via-apriori-algorithm-in-python/)
+
+Exploring the Data
+We first import the libraries we are going to be using for exploratory analysis of the data, as well as style preferences.
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+# Warnings
+import warnings
+warnings.filterwarnings('ignore')
+
+# Style
+sns.set(style='darkgrid')
+plt.rcParams["patch.force_edgecolor"] = True
+
+import os
+print(os.listdir("../input"))
+['BreadBasket_DMS.csv']
+Let's now import the data into a DataFrame with pandas and exploring its properties:
+
+df = pd.read_csv('../input/BreadBasket_DMS.csv')
+print('Dataset Information: \n')
+print(df.info())
+Dataset Information: 
+
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 21293 entries, 0 to 21292
+Data columns (total 4 columns):
+Date           21293 non-null object
+Time           21293 non-null object
+Transaction    21293 non-null int64
+Item           21293 non-null object
+dtypes: int64(1), object(3)
+memory usage: 665.5+ KB
+None
+print('First Ten Rows of the DataFrame: \n')
+print(df.head(10))
+First Ten Rows of the DataFrame: 
+
+         Date      Time  Transaction           Item
+0  2016-10-30  09:58:11            1          Bread
+1  2016-10-30  10:05:34            2   Scandinavian
+2  2016-10-30  10:05:34            2   Scandinavian
+3  2016-10-30  10:07:57            3  Hot chocolate
+4  2016-10-30  10:07:57            3            Jam
+5  2016-10-30  10:07:57            3        Cookies
+6  2016-10-30  10:08:41            4         Muffin
+7  2016-10-30  10:13:03            5         Coffee
+8  2016-10-30  10:13:03            5         Pastry
+9  2016-10-30  10:13:03            5          Bread
+print('Unique Items: ', df['Item'].nunique())
+print( '\n', df['Item'].unique())
+Unique Items:  95
+
+ ['Bread' 'Scandinavian' 'Hot chocolate' 'Jam' 'Cookies' 'Muffin' 'Coffee'
+ 'Pastry' 'Medialuna' 'Tea' 'NONE' 'Tartine' 'Basket' 'Mineral water'
+ 'Farm House' 'Fudge' 'Juice' "Ella's Kitchen Pouches" 'Victorian Sponge'
+ 'Frittata' 'Hearty & Seasonal' 'Soup' 'Pick and Mix Bowls' 'Smoothies'
+ 'Cake' 'Mighty Protein' 'Chicken sand' 'Coke' 'My-5 Fruit Shoot'
+ 'Focaccia' 'Sandwich' 'Alfajores' 'Eggs' 'Brownie' 'Dulce de Leche'
+ 'Honey' 'The BART' 'Granola' 'Fairy Doors' 'Empanadas' 'Keeping It Local'
+ 'Art Tray' 'Bowl Nic Pitt' 'Bread Pudding' 'Adjustment' 'Truffles'
+ 'Chimichurri Oil' 'Bacon' 'Spread' 'Kids biscuit' 'Siblings'
+ 'Caramel bites' 'Jammie Dodgers' 'Tiffin' 'Olum & polenta' 'Polenta'
+ 'The Nomad' 'Hack the stack' 'Bakewell' 'Lemon and coconut' 'Toast'
+ 'Scone' 'Crepes' 'Vegan mincepie' 'Bare Popcorn' 'Muesli' 'Crisps'
+ 'Pintxos' 'Gingerbread syrup' 'Panatone' 'Brioche and salami'
+ 'Afternoon with the baker' 'Salad' 'Chicken Stew' 'Spanish Brunch'
+ 'Raspberry shortbread sandwich' 'Extra Salami or Feta' 'Duck egg'
+ 'Baguette' "Valentine's card" 'Tshirt' 'Vegan Feast' 'Postcard'
+ 'Nomad bag' 'Chocolates' 'Coffee granules ' 'Drinking chocolate spoons '
+ 'Christmas common' 'Argentina Night' 'Half slice Monster ' 'Gift voucher'
+ 'Cherry me Dried fruit' 'Mortimer' 'Raw bars' 'Tacos/Fajita']
+
+Data Engineering
+
+Checking for Null Values
+As always, we check for missing values and zeros and "None" values.
+
+# List how many null values for each feature:
+
+print(df.isnull().sum().sort_values(ascending=False))
+Item           0
+Transaction    0
+Time           0
+Date           0
+dtype: int64
+It seems that our dataset is not missing any values. Let's now check for "None" values within the Item feature.
+
+print(df[df['Item']=='NONE'])
+             Date      Time  Transaction  Item
+26     2016-10-30  10:27:21           11  NONE
+38     2016-10-30  10:34:36           15  NONE
+39     2016-10-30  10:34:36           15  NONE
+66     2016-10-30  11:05:30           29  NONE
+80     2016-10-30  11:37:10           37  NONE
+85     2016-10-30  11:55:51           40  NONE
+126    2016-10-30  13:02:04           59  NONE
+140    2016-10-30  13:37:25           65  NONE
+149    2016-10-30  13:46:48           67  NONE
+167    2016-10-30  14:32:26           75  NONE
+183    2016-10-31  08:47:05           82  NONE
+201    2016-10-31  09:22:48           91  NONE
+226    2016-10-31  10:07:40          103  NONE
+235    2016-10-31  10:21:29          105  NONE
+272    2016-10-31  11:42:05          123  NONE
+282    2016-10-31  11:55:00          128  NONE
+398    2016-11-01  09:26:03          184  NONE
+413    2016-11-01  10:56:08          192  NONE
+419    2016-11-01  11:06:09          195  NONE
+431    2016-11-01  11:22:36          201  NONE
+547    2016-11-02  08:07:05          257  NONE
+560    2016-11-02  09:05:25          266  NONE
+577    2016-11-02  09:52:58          274  NONE
+587    2016-11-02  10:15:48          279  NONE
+628    2016-11-02  12:11:56          298  NONE
+718    2016-11-03  08:15:21          346  NONE
+726    2016-11-03  08:49:23          348  NONE
+788    2016-11-03  11:51:52          380  NONE
+808    2016-11-03  12:16:15          387  NONE
+810    2016-11-03  12:23:47          388  NONE
+...           ...       ...          ...   ...
+20232  2017-04-01  13:36:26         9211  NONE
+20285  2017-04-02  09:49:32         9232  NONE
+20289  2017-04-02  09:51:23         9234  NONE
+20316  2017-04-02  10:50:11         9245  NONE
+20332  2017-04-02  12:00:43         9254  NONE
+20352  2017-04-02  13:19:35         9261  NONE
+20376  2017-04-02  15:01:07         9270  NONE
+20391  2017-04-02  15:22:05         9274  NONE
+20412  2017-04-03  10:09:47         9286  NONE
+20429  2017-04-03  10:45:41         9293  NONE
+20460  2017-04-03  13:24:13         9309  NONE
+20526  2017-04-04  07:58:54         9339  NONE
+20538  2017-04-04  09:04:01         9346  NONE
+20573  2017-04-04  12:18:12         9366  NONE
+20574  2017-04-04  12:18:56         9367  NONE
+20577  2017-04-04  12:19:48         9368  NONE
+20678  2017-04-05  11:02:01         9406  NONE
+20686  2017-04-05  11:05:00         9407  NONE
+20799  2017-04-06  09:28:32         9457  NONE
+20917  2017-04-07  08:47:29         9506  NONE
+20919  2017-04-07  08:57:19         9507  NONE
+20964  2017-04-07  13:06:01         9529  NONE
+21010  2017-04-07  17:30:07         9550  NONE
+21077  2017-04-08  10:44:44         9579  NONE
+21080  2017-04-08  10:48:43         9580  NONE
+21108  2017-04-08  11:54:22         9590  NONE
+21122  2017-04-08  12:58:25         9599  NONE
+21254  2017-04-09  12:01:07         9666  NONE
+21255  2017-04-09  12:04:13         9667  NONE
+21266  2017-04-09  12:31:28         9672  NONE
+
+[786 rows x 4 columns]
+Clearly we have 'NONE' values in our dataset. This is either saying that no item was purchased, or the name of the item was not logged. Either way, this is of no use to us so we drop these rows.
+
+df.drop(df[df['Item']=='NONE'].index, inplace=True)
+print(df.info())
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 20507 entries, 0 to 21292
+Data columns (total 4 columns):
+Date           20507 non-null object
+Time           20507 non-null object
+Transaction    20507 non-null int64
+Item           20507 non-null object
+dtypes: int64(1), object(3)
+memory usage: 801.1+ KB
+None
+
+Adding to the DataFrame
+As we can see above, the Date and Time features are not numerical types. For better future visualization and understanding of the data, we add a few more features to this DataFrame based on the information from these two features.
+
+# Year
+df['Year'] = df['Date'].apply(lambda x: x.split("-")[0])
+# Month
+df['Month'] = df['Date'].apply(lambda x: x.split("-")[1])
+# Day
+df['Day'] = df['Date'].apply(lambda x: x.split("-")[2])
+print(df.info())
+print(df.head())
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 20507 entries, 0 to 21292
+Data columns (total 7 columns):
+Date           20507 non-null object
+Time           20507 non-null object
+Transaction    20507 non-null int64
+Item           20507 non-null object
+Year           20507 non-null object
+Month          20507 non-null object
+Day            20507 non-null object
+dtypes: int64(1), object(6)
+memory usage: 1.3+ MB
+None
+         Date      Time  Transaction           Item  Year Month Day
+0  2016-10-30  09:58:11            1          Bread  2016    10  30
+1  2016-10-30  10:05:34            2   Scandinavian  2016    10  30
+2  2016-10-30  10:05:34            2   Scandinavian  2016    10  30
+3  2016-10-30  10:07:57            3  Hot chocolate  2016    10  30
+4  2016-10-30  10:07:57            3            Jam  2016    10  30
+
+Visualizing and Understanding the Data
+We know that this dataset is recorded from 30/10/2016 to 09/04/2017. Before we engage in modeling, we should explore and visualize the sales within this time period. Which items do customers purchase most? Which months were more successful? Let's answer this visually.
+
+Let's check the most sold items from the bakery:
+
+most_sold = df['Item'].value_counts().head(15)
+
+print('Most Sold Items: \n')
+print(most_sold)
+Most Sold Items: 
+
+Coffee           5471
+Bread            3325
+Tea              1435
+Cake             1025
+Pastry            856
+Sandwich          771
+Medialuna         616
+Hot chocolate     590
+Cookies           540
+Brownie           379
+Farm House        374
+Muffin            370
+Juice             369
+Alfajores         369
+Soup              342
+Name: Item, dtype: int64
+plt.figure(figsize=(12,6))
+
+plt.subplot(1,2,1)
+#plt.plot(most_sold)
+most_sold.plot(kind='line')
+plt.title('Items Most Sold')
+
+
+plt.subplot(1,2,2)
+most_sold.plot(kind='bar')
+plt.title('Items Most Sold')
+Text(0.5,1,'Items Most Sold')
+
+Clearly coffee is the most sold item, followed by bread, tea, cake, and pastry, respectively. This makes sense for a bakery. Now that we know which are the most popular items, let's check out which months bring in the most sales.
+
+df.groupby('Month')['Transaction'].nunique().plot(kind='bar', title='Monthly Sales')
+plt.show()
+
+This is getting interesting! We see some big differences here. As an exercise to the curious, perhaps it would be worth finding out if this drastic difference in sales is due to the dataset having less data for April and October. This would make sense, as they are the outlier months in the dataset. Let's check to see if there are less daily transactions recorded for these months in comparison to the others.
+
+print(df.groupby('Month')['Day'].nunique())
+Month
+01    30
+02    28
+03    31
+04     9
+10     2
+11    30
+12    29
+Name: Day, dtype: int64
+Look at that! This intuition was correct. Only 9 days' worth of transactions were recorded for April, and 2 days for October.
+
+
+Market Basket Analysis
+If you'd like to read into how this is done, as well as the library that I use in this Kernel, visit: https://rasbt.github.io/mlxtend/user_guide/frequent_patterns/apriori/
+
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import association_rules, apriori
+Let's now create a list of the unique transactions so that we can transform our data into the correct format using TransactionEncoder.
+
+transaction_list = []
+
+# For loop to create a list of the unique transactions throughout the dataset:
+for i in df['Transaction'].unique():
+    tlist = list(set(df[df['Transaction']==i]['Item']))
+    if len(tlist)>0:
+        transaction_list.append(tlist)
+print(len(transaction_list))
+9465
+te = TransactionEncoder()
+te_ary = te.fit(transaction_list).transform(transaction_list)
+df2 = pd.DataFrame(te_ary, columns=te.columns_)
+Now let's apply apriori. I will use the min_threshold parameter in the association rules for the lift metric to be 1.0 because if it is less than one, then the two items are not likely to be bought together (see Theory above). We will sort the values by confidence to see the likelihood that an item is bought if its antecedent is bought.
+
+frequent_itemsets = apriori(df2, min_support=0.01, use_colnames=True)
+rules = association_rules(frequent_itemsets, metric='lift', min_threshold=1.0)
+rules.sort_values('confidence', ascending=False)
+antecedents	consequents	antecedent support	consequent support	support	confidence	lift	leverage	conviction
+30	(Toast)	(Coffee)	0.033597	0.478394	0.023666	0.704403	1.472431	0.007593	1.764582
+29	(Spanish Brunch)	(Coffee)	0.018172	0.478394	0.010882	0.598837	1.251766	0.002189	1.300235
+18	(Medialuna)	(Coffee)	0.061807	0.478394	0.035182	0.569231	1.189878	0.005614	1.210871
+23	(Pastry)	(Coffee)	0.086107	0.478394	0.047544	0.552147	1.154168	0.006351	1.164682
+1	(Alfajores)	(Coffee)	0.036344	0.478394	0.019651	0.540698	1.130235	0.002264	1.135648
+17	(Juice)	(Coffee)	0.038563	0.478394	0.020602	0.534247	1.116750	0.002154	1.119919
+24	(Sandwich)	(Coffee)	0.071844	0.478394	0.038246	0.532353	1.112792	0.003877	1.115384
+7	(Cake)	(Coffee)	0.103856	0.478394	0.054728	0.526958	1.101515	0.005044	1.102664
+27	(Scone)	(Coffee)	0.034548	0.478394	0.018067	0.522936	1.093107	0.001539	1.093366
+13	(Cookies)	(Coffee)	0.054411	0.478394	0.028209	0.518447	1.083723	0.002179	1.083174
+15	(Hot chocolate)	(Coffee)	0.058320	0.478394	0.029583	0.507246	1.060311	0.001683	1.058553
+5	(Brownie)	(Coffee)	0.040042	0.478394	0.019651	0.490765	1.025860	0.000495	1.024293
+20	(Muffin)	(Coffee)	0.038457	0.478394	0.018806	0.489011	1.022193	0.000408	1.020777
+3	(Pastry)	(Bread)	0.086107	0.327205	0.029160	0.338650	1.034977	0.000985	1.017305
+11	(Cake)	(Tea)	0.103856	0.142631	0.023772	0.228891	1.604781	0.008959	1.111865
+38	(Tea, Coffee)	(Cake)	0.049868	0.103856	0.010037	0.201271	1.937977	0.004858	1.121962
+33	(Sandwich)	(Tea)	0.071844	0.142631	0.014369	0.200000	1.402222	0.004122	1.071712
+8	(Hot chocolate)	(Cake)	0.058320	0.103856	0.011410	0.195652	1.883874	0.005354	1.114125
+39	(Coffee, Cake)	(Tea)	0.054728	0.142631	0.010037	0.183398	1.285822	0.002231	1.049923
+10	(Tea)	(Cake)	0.142631	0.103856	0.023772	0.166667	1.604781	0.008959	1.075372
+37	(Pastry)	(Coffee, Bread)	0.086107	0.090016	0.011199	0.130061	1.444872	0.003448	1.046033
+36	(Coffee, Bread)	(Pastry)	0.090016	0.086107	0.011199	0.124413	1.444872	0.003448	1.043749
+6	(Coffee)	(Cake)	0.478394	0.103856	0.054728	0.114399	1.101515	0.005044	1.011905
+34	(Coffee, Bread)	(Cake)	0.090016	0.103856	0.010037	0.111502	1.073621	0.000688	1.008606
+9	(Cake)	(Hot chocolate)	0.103856	0.058320	0.011410	0.109868	1.883874	0.005354	1.057910
+32	(Tea)	(Sandwich)	0.142631	0.071844	0.014369	0.100741	1.402222	0.004122	1.032134
+22	(Coffee)	(Pastry)	0.478394	0.086107	0.047544	0.099382	1.154168	0.006351	1.014740
+35	(Cake)	(Coffee, Bread)	0.103856	0.090016	0.010037	0.096643	1.073621	0.000688	1.007336
+41	(Cake)	(Tea, Coffee)	0.103856	0.049868	0.010037	0.096643	1.937977	0.004858	1.051779
+2	(Bread)	(Pastry)	0.327205	0.086107	0.029160	0.089119	1.034977	0.000985	1.003306
+25	(Coffee)	(Sandwich)	0.478394	0.071844	0.038246	0.079947	1.112792	0.003877	1.008807
+19	(Coffee)	(Medialuna)	0.478394	0.061807	0.035182	0.073542	1.189878	0.005614	1.012667
+40	(Tea)	(Coffee, Cake)	0.142631	0.054728	0.010037	0.070370	1.285822	0.002231	1.016827
+14	(Coffee)	(Hot chocolate)	0.478394	0.058320	0.029583	0.061837	1.060311	0.001683	1.003749
+12	(Coffee)	(Cookies)	0.478394	0.054411	0.028209	0.058966	1.083723	0.002179	1.004841
+31	(Coffee)	(Toast)	0.478394	0.033597	0.023666	0.049470	1.472431	0.007593	1.016699
+16	(Coffee)	(Juice)	0.478394	0.038563	0.020602	0.043065	1.116750	0.002154	1.004705
+0	(Coffee)	(Alfajores)	0.478394	0.036344	0.019651	0.041078	1.130235	0.002264	1.004936
+4	(Coffee)	(Brownie)	0.478394	0.040042	0.019651	0.041078	1.025860	0.000495	1.001080
+21	(Coffee)	(Muffin)	0.478394	0.038457	0.018806	0.039311	1.022193	0.000408	1.000888
+26	(Coffee)	(Scone)	0.478394	0.034548	0.018067	0.037765	1.093107	0.001539	1.003343
+28	(Coffee)	(Spanish Brunch)	0.478394	0.018172	0.010882	0.022747	1.251766	0.002189	1.004682
+
+Conclusions
+Very cool! We clearly see meaningful results here from our analysis shown above, where the higher the lift value, the stronger the correlation between the items. The data clearly shows that coffee is a popular consequent, which makes sense because it is a bakery. Besides coffee, let's look at the more interesting item correlations (format: antecedant(s) -> consequent):
+
+Pastry -> Bread
+Cake -> Tea
+(Coffee + Tea) -> Cake
+Sandwhich -> Tea
+Hot Chocolate -> Cake
+So how is this useful knowledge for the bakery? Businesses are always looking to optimize their setup and drive up their sales. Bakeries are no different, and this kind of analysis could have been done for any kind of retail store or market place as well. Because we now know the correlation between items and the common interest of the customers, the business can make decisions based on these findings. For example, this bakery might want to place their freshly baked bread near their pastries, since customers who purchase pastries seem to also be enticed by bread. Besides product placement, the bakery might also be interested in having a promotion of a free item, given the great chances of another item being sold as a result of it (For example, if they were to give away some of their free special toast one day, it might not only attract new frequent customers, but there is also a very good chance that the customer will still spend money on coffee).
